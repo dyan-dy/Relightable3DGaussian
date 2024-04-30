@@ -2,7 +2,7 @@ import glob
 import json
 import os
 import torchvision.transforms
-import dearpygui.dearpygui as dpg
+# import dearpygui.dearpygui as dpg
 from scipy.spatial.transform import Rotation as R
 import numpy as np
 import torch
