@@ -1,5 +1,5 @@
 
-DATA_ROOT="/home/gj/Project/Relightable3DGaussian/datasets"
+DATA_ROOT="/home/gdj592/dataset/whu3d-dataset/mls/images/0/planar_projections"
 WIDTH=800
 HEIGHT=800
 NUM_SRC=5
