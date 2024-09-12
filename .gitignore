@@ -10,3 +10,4 @@ datasets
 log
 point
 nvdiffrast
+wandb

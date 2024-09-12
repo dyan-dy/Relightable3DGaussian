@@ -15,17 +15,19 @@ from utils.image_utils import psnr, visualize_depth
 from utils.system_utils import prepare_output_and_logger
 from argparse import ArgumentParser
 from arguments import ModelParams, PipelineParams, OptimizationParams
-from gui import GUI
+# from gui import GUI
 from scene.direct_light_map import DirectLightMap
 from utils.graphics_utils import rgb_to_srgb
 from torchvision.utils import save_image, make_grid
 from lpipsPyTorch import lpips
 from scene.utils import save_render_orb, save_depth_orb, save_normal_orb, save_albedo_orb, save_roughness_orb
+import wandb
 
 
 def training(dataset: ModelParams, opt: OptimizationParams, pipe: PipelineParams, is_pbr=False):
     first_iter = 0
     tb_writer = prepare_output_and_logger(dataset)
+    wandb.init(project="r3dg_new_Sept2024", entity="gdj592")
 
     """
     Setup Gaussians
@@ -201,6 +203,24 @@ def training(dataset: ModelParams, opt: OptimizationParams, pipe: PipelineParams
                         pass
 
                     print("[ITER {}] Saving {} Checkpoint".format(iteration, com_name))
+                
+        # # wanb logging
+        # # 获取字典的前7个项
+        # first_seven_items = dict(list(render_pkg.items())[:7])
+        # # 记录每一张图像到wandb
+        # for key, tensor in first_seven_items.items():
+        #     # 确保张量在CPU上并且转换为numpy数组
+        #     tensor = tensor.cpu().detach()
+        #     # 从CHW转换到HWC
+        #     image_np = tensor.permute(1, 2, 0).numpy()
+        #     wandb.log({f"{key}_image": wandb.Image(image_np, caption=key)})
+        # # 记录评估指标
+        # wandb.log({
+        #     f"loss": loss.item(),
+        #     f"psnr": tb_dict["psnr"],
+        #     f"ssim": tb_dict["ssim"],
+        #     f"loss": tb_dict["loss"]
+        # })        
 
     if dataset.eval:
         eval_render(scene, gaussians, render_fn, pipe, background, opt, pbr_kwargs)
@@ -238,6 +258,14 @@ def training_report(tb_writer, iteration, tb_dict, scene: Scene, renderFunc, pip
                     depth = (depth - depth.min()) / (depth.max() - depth.min())
                     normal = torch.clamp(
                         render_pkg.get("normal", torch.zeros_like(image)) / 2 + 0.5 * opacity, 0.0, 1.0)
+                    
+                    # wandb.log({
+                    #     "image": wandb.Image(image.cpu()),
+                    #     "gt_image": wandb.Image(gt_image.cpu()),
+                    #     "opacity": wandb.Image(opacity.cpu()),
+                    #     "depth": wandb.Image(depth.cpu()),
+                    #     "normal": wandb.Image(normal.cpu())
+                    # })
 
                     # BRDF
                     base_color = torch.clamp(render_pkg.get("base_color", torch.zeros_like(image)), 0.0, 1.0)
@@ -252,6 +280,10 @@ def training_report(tb_writer, iteration, tb_dict, scene: Scene, renderFunc, pip
                     if tb_writer and (idx < 2):
                         tb_writer.add_images(config['name'] + "_view_{}/render".format(viewpoint.image_name),
                                              grid[None], global_step=iteration)
+                    # # 使用 wandb 记录图像
+                    # if iteration == args.iterations and idx < 2:
+                    #     wandb.log({f"{config['name']}_view_{viewpoint.image_name}/render": wandb.Image(grid.cpu())})
+                    
 
                     l1_test += F.l1_loss(image, gt_image).mean().double()
                     psnr_test += psnr(image, gt_image).mean().double()
@@ -269,6 +301,11 @@ def training_report(tb_writer, iteration, tb_dict, scene: Scene, renderFunc, pip
                 if iteration == args.iterations:
                     with open(os.path.join(args.model_path, config['name'] + "_loss.txt"), 'w') as f:
                         f.write("L1 {} PSNR {} PSNR_PBR {}".format(l1_test, psnr_test, psnr_pbr_test))
+                # wandb.log({
+                #     f"{config['name']}/loss_viewpoint - l1_loss": l1_test,
+                #     f"{config['name']}/loss_viewpoint - psnr": psnr_test,
+                #     f"{config['name']}/loss_viewpoint - psnr_pbr": psnr_pbr_test
+                # })
 
         torch.cuda.empty_cache()
 

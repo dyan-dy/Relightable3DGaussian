@@ -12,6 +12,8 @@ from utils.loss_utils import ssim, first_order_edge_aware_loss, second_order_edg
     bilateral_smooth_loss, tv_loss
 from utils.image_utils import psnr
 from .r3dg_rasterization import GaussianRasterizationSettings, GaussianRasterizer
+import wandb
+import numpy as np
 
 
 def render_view(camera: Camera, pc: GaussianModel, pipe, bg_color: torch.Tensor, 
@@ -107,7 +109,6 @@ def render_view(camera: Camera, pc: GaussianModel, pipe, bg_color: torch.Tensor,
     mask = num_contrib > 0
     rendered_feature = rendered_feature / rendered_opacity.clamp_min(1e-5) * mask
     # rendered_depth = rendered_depth / rendered_opacity.clamp_min(1e-5) * mask
-    
     rendered_normal, rendered_depth, rendered_depth2 = torch.split(rendered_feature, [3, 1, 1], dim=0)
     
     rendered_var = rendered_depth2 - rendered_depth.square()
@@ -130,7 +131,16 @@ def render_view(camera: Camera, pc: GaussianModel, pipe, bg_color: torch.Tensor,
                "normals": normals,
                "directions": dir_pp_normalized,
                "weights": weights}
-    
+
+    # # 获取字典的前7个项
+    # first_seven_items = dict(list(results.items())[:7])
+    # # 记录每一张图像到wandb
+    # for key, tensor in first_seven_items.items():
+    #     # 确保张量在CPU上并且转换为numpy数组
+    #     tensor = tensor.cpu().detach()
+    #     # 从CHW转换到HWC
+    #     image_np = tensor.permute(1, 2, 0).numpy()
+    #     wandb.log({f"{key}_image": wandb.Image(image_np, caption=key)})
     return results
 
 def calculate_loss(viewpoint_camera, pc, render_pkg, opt, iteration):
@@ -153,7 +163,7 @@ def calculate_loss(viewpoint_camera, pc, render_pkg, opt, iteration):
     tb_dict["ssim"] = ssim_val.item()
     loss = (1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * (1.0 - ssim_val)
 
-    if opt.lambda_mask_entropy > 0:
+    if opt.lambda_mask_entropy > 0: #
         o = rendered_opacity.clamp(1e-6, 1 - 1e-6)
         loss_mask_entropy = -(image_mask * torch.log(o) + (1-image_mask) * torch.log(1 - o)).mean()
         tb_dict["loss_mask_entropy"] = loss_mask_entropy.item()
