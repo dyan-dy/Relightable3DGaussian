@@ -22,6 +22,7 @@ from torchvision.utils import save_image, make_grid
 from lpipsPyTorch import lpips
 from scene.utils import save_render_orb, save_depth_orb, save_normal_orb, save_albedo_orb, save_roughness_orb
 import wandb
+import pdb
 
 
 def training(dataset: ModelParams, opt: OptimizationParams, pipe: PipelineParams, is_pbr=False):
@@ -204,23 +205,7 @@ def training(dataset: ModelParams, opt: OptimizationParams, pipe: PipelineParams
 
                     print("[ITER {}] Saving {} Checkpoint".format(iteration, com_name))
                 
-        # # wanb logging
-        # # 获取字典的前7个项
-        # first_seven_items = dict(list(render_pkg.items())[:7])
-        # # 记录每一张图像到wandb
-        # for key, tensor in first_seven_items.items():
-        #     # 确保张量在CPU上并且转换为numpy数组
-        #     tensor = tensor.cpu().detach()
-        #     # 从CHW转换到HWC
-        #     image_np = tensor.permute(1, 2, 0).numpy()
-        #     wandb.log({f"{key}_image": wandb.Image(image_np, caption=key)})
-        # # 记录评估指标
-        # wandb.log({
-        #     f"loss": loss.item(),
-        #     f"psnr": tb_dict["psnr"],
-        #     f"ssim": tb_dict["ssim"],
-        #     f"loss": tb_dict["loss"]
-        # })        
+      
 
     if dataset.eval:
         eval_render(scene, gaussians, render_fn, pipe, background, opt, pbr_kwargs)

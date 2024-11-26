@@ -1,12 +1,12 @@
 #!/bin/bash
 
-root_dir="/home/gdj592/code/lj/data/"
-list="recali" # test_hr_human_calibrated_2"
+root_dir="/home/gdj592/code/Relightable3DGaussian/datasets/"
+list="test16" # test_hr_human_calibrated_2"
 
 for i in $list; do
     python train.py --eval \
-        --source_path /home/gdj592/code/lj/data/$i \
-        --model_path output/human/${i}_debug/3dgs \
+        --source_path /home/gdj592/code/Relightable3DGaussian/datasets/$i \
+        --model_path output/human/${i}/3dgs \
         --resolution 1 \
         --lambda_normal_render_depth 0.01 \
         --lambda_normal_smooth 0.01 \
@@ -16,14 +16,14 @@ for i in $list; do
 
 
     python eval_nvs.py --eval \
-        -m output/human/${i}_debug/3dgs \
-        -c output/human/${i}_debug/3dgs/chkpnt30000.pth
+        -m output/human/${i}/3dgs \
+        -c output/human/${i}/3dgs/chkpnt30000.pth
 
     python train.py --eval \
         -s /home/gdj592/code/lj/data/$i/ \
-        -m output/human/${i}_debug/neilf \
+        -m output/human/${i}/neilf \
         --resolution 1 \
-        -c output/human/${i}_debug/3dgs/chkpnt30000.pth \
+        -c output/human/${i}/3dgs/chkpnt30000.pth \
         --save_training_vis \
         --position_lr_init 0.000016 \
         --position_lr_final 0.00000016 \
@@ -42,7 +42,7 @@ for i in $list; do
         --lambda_env_smooth 0.01
     
     python eval_nvs.py --eval \
-        -m output/human/${i}_debug/neilf \
-        -c output/human/${i}_debug/neilf/chkpnt40000.pth \
+        -m output/human/${i}/neilf \
+        -c output/human/${i}/neilf/chkpnt40000.pth \
         -t neilf
 done
